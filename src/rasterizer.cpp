@@ -91,7 +91,7 @@ void Rasterizer::drawFilledTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const Co
     // Sort the points so that y0 <= y1 <= y2
     if (p1.y < p0.y) { std::swap(p1, p0); }
     if (p2.y < p0.y) { std::swap(p2, p0); }
-    if (p2.y < p2.y) { std::swap(p2, p1); }
+    if (p2.y < p1.y) { std::swap(p2, p1); }
 
     // Compute the x coordinates of the triangle edges
     auto x01 = interpolate(p0.y, p0.x, p1.y, p1.x);
@@ -100,6 +100,30 @@ void Rasterizer::drawFilledTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const Co
 
     // Concatenate the short sides
     x01.pop_back();
-    std::vector<float> x012;
-    x012.insert(x01.end(), x12.begin(), x12.end());
+    std::vector<float> x012 = x01;
+    x012.insert(x012.end(), x12.begin(), x12.end());
+
+    // Determine which is left and which is right
+    std::vector<float> xLeft;
+    std::vector<float> xRight;
+    int m = std::floor(x012.size() / 2);
+    if (x02[m] < x012[m])
+    {
+        xLeft = x02;
+        xRight = x012;
+    }
+    else
+    {
+        xLeft = x012;
+        xRight = x02;
+    }
+
+    // Draw the horizontal segments
+    for (float y = p0.y; y <= p2.y; ++y)
+    {
+        for (float x = xLeft[y - p0.y]; x <= xRight[y - p0.y]; ++x)
+        {
+            _canvas.setPixel(x, y, color.packed);
+        }
+    }
 }
