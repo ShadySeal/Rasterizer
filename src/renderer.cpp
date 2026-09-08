@@ -58,7 +58,7 @@ void Renderer::render()
 
     Rasterizer rasterizer(*_canvas);
     rasterizer.setBakcgroundColor(_wWidth, _wHeight, ColorRGBA(255, 255, 255));
-    rasterizer.drawFilledTriangle(Vector2(-200, -250), Vector2(200, 50), Vector2(20, 250), ColorRGBA(0, 255, 0));
+    rasterizer.drawShadedTriangle(Vector2(-200, -250), Vector2(200, 50), Vector2(20, 250), ColorRGBA(0, 255, 0));
     rasterizer.drawWireframeTriangle(Vector2(-200, -250), Vector2(200, 50), Vector2(20, 250), ColorRGBA(0, 0, 0));
 
     while (running)

@@ -20,5 +20,6 @@ namespace rasterizer
         std::vector<float> interpolate(const float i0, const float d0, const float i1, const float d1) const;
         void drawWireframeTriangle(const Vector2 p0, const Vector2 p1, const Vector2 p2, const ColorRGBA color) const;
         void drawFilledTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const ColorRGBA color) const;
+        void drawShadedTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const ColorRGBA color) const;
     };
 }
