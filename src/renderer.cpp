@@ -2,6 +2,7 @@
 #include "scene.h"
 #include "rasterizer.h"
 #include "color_rgba.h"
+#include "vector3.h"
 
 using namespace rasterizer;
 
@@ -56,10 +57,38 @@ void Renderer::render()
 
     bool running = true;
 
-    Rasterizer rasterizer(*_canvas);
+    Rasterizer rasterizer(*_canvas, _wWidth, _wHeight, 1, 1, 1);
     rasterizer.setBakcgroundColor(_wWidth, _wHeight, ColorRGBA(255, 255, 255));
-    rasterizer.drawShadedTriangle(Vector2(-200, -250), Vector2(200, 50), Vector2(20, 250), ColorRGBA(0, 255, 0));
-    rasterizer.drawWireframeTriangle(Vector2(-200, -250), Vector2(200, 50), Vector2(20, 250), ColorRGBA(0, 0, 0));
+
+    // The four "front" vertices'
+    Vector3 vAf(-2, -0.5, 5);
+    Vector3 vBf(-2, 0.5, 5);
+    Vector3 vCf(-1, 0.5, 5);
+    Vector3 vDf(-1, -0.5, 5);
+
+    // The four "back" vertices
+    Vector3 vAb(-2, -0.5, 6);
+    Vector3 vBb(-2, 0.5, 6);
+    Vector3 vCb(-1, 0.5, 6);
+    Vector3 vDb(-1, -0.5, 6);
+
+    // The front face
+    rasterizer.drawLine(rasterizer.projectVertex(vAf), rasterizer.projectVertex(vBf), ColorRGBA(0, 0, 255));
+    rasterizer.drawLine(rasterizer.projectVertex(vBf), rasterizer.projectVertex(vCf), ColorRGBA(0, 0, 255));
+    rasterizer.drawLine(rasterizer.projectVertex(vCf), rasterizer.projectVertex(vDf), ColorRGBA(0, 0, 255));
+    rasterizer.drawLine(rasterizer.projectVertex(vDf), rasterizer.projectVertex(vAf), ColorRGBA(0, 0, 255));
+
+    // The back face
+    rasterizer.drawLine(rasterizer.projectVertex(vAb), rasterizer.projectVertex(vBb), ColorRGBA(255, 0, 0));
+    rasterizer.drawLine(rasterizer.projectVertex(vBb), rasterizer.projectVertex(vCb), ColorRGBA(255, 0, 0));
+    rasterizer.drawLine(rasterizer.projectVertex(vCb), rasterizer.projectVertex(vDb), ColorRGBA(255, 0, 0));
+    rasterizer.drawLine(rasterizer.projectVertex(vDb), rasterizer.projectVertex(vAb), ColorRGBA(255, 0, 0));
+
+    // The front-to-back edges
+    rasterizer.drawLine(rasterizer.projectVertex(vAf), rasterizer.projectVertex(vAb), ColorRGBA(0, 255, 0));
+    rasterizer.drawLine(rasterizer.projectVertex(vBf), rasterizer.projectVertex(vBb), ColorRGBA(0, 255, 0));
+    rasterizer.drawLine(rasterizer.projectVertex(vCf), rasterizer.projectVertex(vCb), ColorRGBA(0, 255, 0));
+    rasterizer.drawLine(rasterizer.projectVertex(vDf), rasterizer.projectVertex(vDb), ColorRGBA(0, 255, 0));
 
     while (running)
     {

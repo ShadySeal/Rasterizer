@@ -2,7 +2,18 @@
 
 using namespace rasterizer;
 
-Rasterizer::Rasterizer(Canvas& canvas) : _canvas(canvas) {}
+Rasterizer::Rasterizer(Canvas& canvas, int cW, int cH, float vW, float vH, float d)
+: _canvas(canvas), _cW(cW), _cH(cH), _vW(vW), _vH(vH), _d(d) {}
+
+Vector2 Rasterizer::viewportToCanvas(float x, float y) const
+{
+    return Vector2(x * _cW / _vW, y * _cH / _vH);
+}
+
+Vector2 Rasterizer::projectVertex(const Vector3& v) const
+{
+    return viewportToCanvas(v.x * _d / v.z, v.y * _d / v.z);
+}
 
 void Rasterizer::setBakcgroundColor(const int width, const int height, const ColorRGBA color) const
 {
@@ -135,9 +146,9 @@ void Rasterizer::drawShadedTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const Co
     if (p2.y < p0.y) { std::swap(p2, p0); }
     if (p2.y < p1.y) { std::swap(p2, p1); }
 
-    // Define the heights at each vertex
-    float h0 = 0.0f;
-    float h1 = 0.0f;
+    // Define the intensity at each vertex
+    float h0 = 0.3f;
+    float h1 = 0.1f;
     float h2 = 1.0f;
 
     // Compute the x coordinates and h values of the triangle edges
