@@ -2,8 +2,11 @@
 
 #include <vector>
 #include "rendering/color.h"
+#include "rendering/instance.h"
 #include "light.h"
 #include <SDL3/SDL.h>
+
+using namespace rasterizer::rendering;
 
 namespace rasterizer::scene
 {
@@ -13,6 +16,8 @@ namespace rasterizer::scene
         ~Scene();
 
         rasterizer::rendering::Color backgroundColor;
+
+        std::vector<Instance> instances;
 
         std::vector<Light> lights;
     };

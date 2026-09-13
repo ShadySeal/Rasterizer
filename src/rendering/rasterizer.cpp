@@ -2,6 +2,7 @@
 
 using namespace rasterizer::rendering;
 using namespace rasterizer::math;
+using namespace rasterizer::scene;
 
 Rasterizer::Rasterizer(Canvas& canvas, int cW, int cH, float vW, float vH, float d)
 : _canvas(canvas), _cW(cW), _cH(cH), _vW(vW), _vH(vH), _d(d) {}
@@ -14,6 +15,14 @@ Vector2 Rasterizer::viewportToCanvas(float x, float y) const
 Vector2 Rasterizer::projectVertex(const Vector3& v) const
 {
     return viewportToCanvas(v.x * _d / v.z, v.y * _d / v.z);
+}
+
+void Rasterizer::renderScene(Scene& scene) const
+{
+    for (auto& i : scene.instances)
+    {
+        renderInstance(i);
+    }
 }
 
 void Rasterizer::setBakcgroundColor(const int width, const int height, const Color color) const
@@ -227,6 +236,24 @@ void Rasterizer::renderObject(const std::vector<Vector3>& vertices, const std::v
     }
 
     for (auto t : triangles)
+    {
+        renderTriangle(t, projected);
+    }
+}
+
+void Rasterizer::renderInstance(const Instance instance) const
+{
+    std::vector<Vector2> projected;
+
+    Model model = instance.model;
+
+    for (auto v : model.vertices)
+    {
+        Vector3 vT = v + instance.position;
+        projected.push_back(projectVertex(vT));
+    }
+
+    for (auto t : model.triangles)
     {
         renderTriangle(t, projected);
     }

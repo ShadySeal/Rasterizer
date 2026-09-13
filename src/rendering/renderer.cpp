@@ -61,34 +61,10 @@ void Renderer::render()
     Rasterizer rasterizer(*_canvas, _wWidth, _wHeight, 1, 1, 1);
     rasterizer.setBakcgroundColor(_wWidth, _wHeight, Color(Color::WHITE));
 
-    std::vector<Vector3> vertices = {
-        { 1,  1,  1},
-        {-1,  1,  1},
-        {-1, -1,  1},
-        { 1, -1,  1},
-        { 1,  1, -1},
-        {-1,  1, -1},
-        {-1, -1, -1},
-        { 1, -1, -1}
-    };
+    //auto tranlatedVertices = rasterizer.translateVertices(Vector3(-1.5, 0, 7), vertices);
+    //rasterizer.renderObject(tranlatedVertices, triangles);
 
-    std::vector<Triangle> triangles = {
-        {0, 1, 2, Color(Color::RED)},
-        {0, 2, 3, Color(Color::RED)},
-        {4, 0, 3, Color(Color::GREEN)},
-        {4, 3, 7, Color(Color::GREEN)},
-        {5, 4, 7, Color(Color::BLUE)},
-        {5, 7, 6, Color(Color::BLUE)},
-        {1, 5, 6, Color(Color::YELLOW)},
-        {1, 6, 2, Color(Color::YELLOW)},
-        {4, 5, 1, Color(Color::MAGENTA)},
-        {4, 1, 0, Color(Color::MAGENTA)},
-        {2, 6, 7, Color(Color::CYAN)},
-        {2, 7, 3, Color(Color::CYAN)}
-    };
-    
-    auto tranlatedVertices = rasterizer.translateVertices(Vector3(-1.5, 0, 7), vertices);
-    rasterizer.renderObject(tranlatedVertices, triangles);
+    rasterizer.renderScene(_scene);
 
     while (running)
     {
