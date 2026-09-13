@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace rasterizer
+namespace rasterizer::rendering
 {
     class Canvas
     {

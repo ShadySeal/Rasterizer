@@ -1,6 +1,7 @@
-#include "rasterizer.h"
+#include "rendering/rasterizer.h"
 
-using namespace rasterizer;
+using namespace rasterizer::rendering;
+using namespace rasterizer::math;
 
 Rasterizer::Rasterizer(Canvas& canvas, int cW, int cH, float vW, float vH, float d)
 : _canvas(canvas), _cW(cW), _cH(cH), _vW(vW), _vH(vH), _d(d) {}
@@ -15,7 +16,7 @@ Vector2 Rasterizer::projectVertex(const Vector3& v) const
     return viewportToCanvas(v.x * _d / v.z, v.y * _d / v.z);
 }
 
-void Rasterizer::setBakcgroundColor(const int width, const int height, const ColorRGBA color) const
+void Rasterizer::setBakcgroundColor(const int width, const int height, const Color color) const
 {
     for (int x = -width / 2; x <= width / 2; x++)
     {
@@ -26,7 +27,7 @@ void Rasterizer::setBakcgroundColor(const int width, const int height, const Col
     }
 }
 
-void Rasterizer::drawLine(Vector2 p0, Vector2 p1, const ColorRGBA color) const
+void Rasterizer::drawLine(Vector2 p0, Vector2 p1, const Color color) const
 {
     float dx = p0.x - p1.x;
     float dy = p0.y - p1.y;
@@ -90,14 +91,14 @@ std::vector<float> Rasterizer::interpolate(const float i0, const float d0, const
     return values;
 }
 
-void Rasterizer::drawWireframeTriangle(const Vector2 p0, const Vector2 p1, const Vector2 p2, const ColorRGBA color) const
+void Rasterizer::drawWireframeTriangle(const Vector2 p0, const Vector2 p1, const Vector2 p2, const Color color) const
 {
     drawLine(p0, p1, color);
     drawLine(p1, p2, color);
     drawLine(p2, p0, color);
 }
 
-void Rasterizer::drawFilledTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const ColorRGBA color) const
+void Rasterizer::drawFilledTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const Color color) const
 {
     // Sort the points so that y0 <= y1 <= y2
     if (p1.y < p0.y) { std::swap(p1, p0); }
@@ -139,7 +140,7 @@ void Rasterizer::drawFilledTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const Co
     }
 }
 
-void Rasterizer::drawShadedTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const ColorRGBA color) const
+void Rasterizer::drawShadedTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const Color color) const
 {
     // Sort the points so that y0 <= y1 <= y2
     if (p1.y < p0.y) { std::swap(p1, p0); }
@@ -206,7 +207,7 @@ void Rasterizer::drawShadedTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const Co
 
             float h = std::clamp(hSegment[xIndex], 0.0f, 1.0f);
 
-            ColorRGBA shadedColor = color * h;
+            Color shadedColor = color * h;
 
             _canvas.setPixel(
                 static_cast<int>(std::round(x)),
@@ -215,4 +216,35 @@ void Rasterizer::drawShadedTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const Co
             );
         }
     }
+}
+
+void Rasterizer::renderObject(const std::vector<Vector3>& vertices, const std::vector<Triangle>& triangles) const
+{
+    std::vector<Vector2> projected;
+    for (auto v : vertices)
+    {
+        projected.push_back(projectVertex(v));
+    }
+
+    for (auto t : triangles)
+    {
+        renderTriangle(t, projected);
+    }
+}
+
+void Rasterizer::renderTriangle(const Triangle& triangle, const std::vector<Vector2>& projected) const
+{
+    drawWireframeTriangle(projected[triangle.v[0]], projected[triangle.v[1]], projected[triangle.v[2]], triangle.color);
+}
+
+std::vector<Vector3> Rasterizer::translateVertices(const Vector3 t, const std::vector<Vector3>& vertices) const
+{
+    std::vector<Vector3> translated;
+
+    for (const auto& v : vertices)
+    {
+        translated.push_back(v + t);
+    }
+
+    return translated;
 }

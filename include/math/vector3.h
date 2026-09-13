@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-namespace rasterizer
+namespace rasterizer::math
 {
     struct Vector3
     {

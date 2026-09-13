@@ -1,9 +1,11 @@
 #pragma once
 
 #include <algorithm>
-#include "vector3.h"
+#include "math/vector3.h"
 
-namespace rasterizer
+using namespace rasterizer::math;
+
+namespace rasterizer::scene
 {
     struct Light
     {

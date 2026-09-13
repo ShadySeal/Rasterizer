@@ -7,14 +7,17 @@
 #include <string>
 #include "canvas.h"
 
-namespace rasterizer
+namespace rasterizer::scene
 {
     struct Scene;
-    
+}
+
+namespace rasterizer::rendering
+{
     class Renderer
     {
     private:
-        Scene& _scene;
+        rasterizer::scene::Scene& _scene;
         SDL_Window* _window = nullptr;
         SDL_Renderer* _renderer = nullptr;
         SDL_Texture* _texture = nullptr;
@@ -30,7 +33,7 @@ namespace rasterizer
         void cleanup();
 
     public:
-        Renderer(Scene& scene, int cW, int cH, int wS = 1);
+        Renderer(rasterizer::scene::Scene& scene, int cW, int cH, int wS = 1);
         ~Renderer();
 
         void render();

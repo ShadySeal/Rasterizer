@@ -1,18 +1,18 @@
 #pragma once
 
 #include <vector>
-#include "color_rgba.h"
+#include "rendering/color.h"
 #include "light.h"
 #include <SDL3/SDL.h>
 
-namespace rasterizer
+namespace rasterizer::scene
 {
     struct Scene
     {
         Scene();
         ~Scene();
 
-        ColorRGBA backgroundColor;
+        rasterizer::rendering::Color backgroundColor;
 
         std::vector<Light> lights;
     };

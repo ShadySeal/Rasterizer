@@ -1,10 +1,8 @@
-#include "scene.h"
-
-using namespace rasterizer;
+#include "scene/scene.h"
 
 int main()
 {
-    Scene scene;
+    rasterizer::scene::Scene scene;
 
     return 0;
 }

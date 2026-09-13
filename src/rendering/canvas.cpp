@@ -1,6 +1,6 @@
-#include "canvas.h"
+#include "rendering/canvas.h"
 
-using namespace rasterizer;
+using namespace rasterizer::rendering;
 
 Canvas::Canvas(int width, int height) : _width(width), _height(height)
 {

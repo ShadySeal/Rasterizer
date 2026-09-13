@@ -1,12 +1,13 @@
-#include "renderer.h"
-#include "scene.h"
-#include "rasterizer.h"
-#include "color_rgba.h"
-#include "vector3.h"
+#include "rendering/renderer.h"
+#include "rendering/rasterizer.h"
+#include "scene/scene.h"
+#include "rendering/color.h"
+#include "math/vector3.h"
 
-using namespace rasterizer;
+using namespace rasterizer::rendering;
+using namespace rasterizer::math;
 
-Renderer::Renderer(Scene& scene, int wWidth, int wHeight, int wScale)
+rasterizer::rendering::Renderer::Renderer(rasterizer::scene::Scene& scene, int wWidth, int wHeight, int wScale)
     : _scene(scene), _wWidth(wWidth), _wHeight(wHeight), _wScale(wScale)
 {
     _initialized = init();
@@ -58,37 +59,36 @@ void Renderer::render()
     bool running = true;
 
     Rasterizer rasterizer(*_canvas, _wWidth, _wHeight, 1, 1, 1);
-    rasterizer.setBakcgroundColor(_wWidth, _wHeight, ColorRGBA(255, 255, 255));
+    rasterizer.setBakcgroundColor(_wWidth, _wHeight, Color(Color::WHITE));
 
-    // The four "front" vertices'
-    Vector3 vAf(-2, -0.5, 5);
-    Vector3 vBf(-2, 0.5, 5);
-    Vector3 vCf(-1, 0.5, 5);
-    Vector3 vDf(-1, -0.5, 5);
+    std::vector<Vector3> vertices = {
+        { 1,  1,  1},
+        {-1,  1,  1},
+        {-1, -1,  1},
+        { 1, -1,  1},
+        { 1,  1, -1},
+        {-1,  1, -1},
+        {-1, -1, -1},
+        { 1, -1, -1}
+    };
 
-    // The four "back" vertices
-    Vector3 vAb(-2, -0.5, 6);
-    Vector3 vBb(-2, 0.5, 6);
-    Vector3 vCb(-1, 0.5, 6);
-    Vector3 vDb(-1, -0.5, 6);
-
-    // The front face
-    rasterizer.drawLine(rasterizer.projectVertex(vAf), rasterizer.projectVertex(vBf), ColorRGBA(0, 0, 255));
-    rasterizer.drawLine(rasterizer.projectVertex(vBf), rasterizer.projectVertex(vCf), ColorRGBA(0, 0, 255));
-    rasterizer.drawLine(rasterizer.projectVertex(vCf), rasterizer.projectVertex(vDf), ColorRGBA(0, 0, 255));
-    rasterizer.drawLine(rasterizer.projectVertex(vDf), rasterizer.projectVertex(vAf), ColorRGBA(0, 0, 255));
-
-    // The back face
-    rasterizer.drawLine(rasterizer.projectVertex(vAb), rasterizer.projectVertex(vBb), ColorRGBA(255, 0, 0));
-    rasterizer.drawLine(rasterizer.projectVertex(vBb), rasterizer.projectVertex(vCb), ColorRGBA(255, 0, 0));
-    rasterizer.drawLine(rasterizer.projectVertex(vCb), rasterizer.projectVertex(vDb), ColorRGBA(255, 0, 0));
-    rasterizer.drawLine(rasterizer.projectVertex(vDb), rasterizer.projectVertex(vAb), ColorRGBA(255, 0, 0));
-
-    // The front-to-back edges
-    rasterizer.drawLine(rasterizer.projectVertex(vAf), rasterizer.projectVertex(vAb), ColorRGBA(0, 255, 0));
-    rasterizer.drawLine(rasterizer.projectVertex(vBf), rasterizer.projectVertex(vBb), ColorRGBA(0, 255, 0));
-    rasterizer.drawLine(rasterizer.projectVertex(vCf), rasterizer.projectVertex(vCb), ColorRGBA(0, 255, 0));
-    rasterizer.drawLine(rasterizer.projectVertex(vDf), rasterizer.projectVertex(vDb), ColorRGBA(0, 255, 0));
+    std::vector<Triangle> triangles = {
+        {0, 1, 2, Color(Color::RED)},
+        {0, 2, 3, Color(Color::RED)},
+        {4, 0, 3, Color(Color::GREEN)},
+        {4, 3, 7, Color(Color::GREEN)},
+        {5, 4, 7, Color(Color::BLUE)},
+        {5, 7, 6, Color(Color::BLUE)},
+        {1, 5, 6, Color(Color::YELLOW)},
+        {1, 6, 2, Color(Color::YELLOW)},
+        {4, 5, 1, Color(Color::MAGENTA)},
+        {4, 1, 0, Color(Color::MAGENTA)},
+        {2, 6, 7, Color(Color::CYAN)},
+        {2, 7, 3, Color(Color::CYAN)}
+    };
+    
+    auto tranlatedVertices = rasterizer.translateVertices(Vector3(-1.5, 0, 7), vertices);
+    rasterizer.renderObject(tranlatedVertices, triangles);
 
     while (running)
     {
