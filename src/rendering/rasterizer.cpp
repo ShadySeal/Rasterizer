@@ -244,60 +244,16 @@ void Rasterizer::renderModel(const Model& model, const Matrix4x4& transform) con
     }
 }
 
-void Rasterizer::renderObject(const std::vector<Vector3>& vertices, const std::vector<Triangle>& triangles) const
-{
-    std::vector<Vector2> projected;
-    for (auto v : vertices)
-    {
-        projected.push_back(projectVertex(v));
-    }
-
-    for (auto t : triangles)
-    {
-        renderTriangle(t, projected);
-    }
-}
-
-void Rasterizer::renderInstance(const Instance instance) const
-{
-    // std::vector<Vector2> projected;
-
-    // Model model = instance.model;
-
-    // for (auto v : model.vertices)
-    // {
-    //     Vector3 vW = applyTransform(v, instance.transform);
-    //     projected.push_back(projectVertex(vW));
-    // }
-
-    // for (auto t : model.triangles)
-    // {
-    //     renderTriangle(t, projected);
-    // }
-}
-
 void Rasterizer::renderTriangle(const Triangle& triangle, const std::vector<Vector2>& projected) const
 {
     drawWireframeTriangle(projected[triangle.v[0]], projected[triangle.v[1]], projected[triangle.v[2]], triangle.color);
 }
 
-Vector3 Rasterizer::applyTransform(const Vector3 v, const Matrix4x4& transform) const
-{
-    return transform * v;
-}
 
-Vector3 Rasterizer::scale(const Vector3 v, const float s) const
+float signedDistance(const Plane& plane, const Vector3& vertex)
 {
-    return v * s;
-}
-
-Vector3 Rasterizer::rotate(const Vector3 v, const float angle) const
-{
-    // Not implemented yet
-    return v;
-}
-
-Vector3 Rasterizer::translate(const Vector3 v, const Vector3 t) const
-{
-    return v + t;
+    return vertex.x * plane.normal.x
+         + vertex.y * plane.normal.y
+         + vertex.z * plane.normal.z
+         + plane.d;
 }
