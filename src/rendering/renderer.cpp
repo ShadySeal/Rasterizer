@@ -5,9 +5,10 @@
 #include "math/vector3.h"
 
 using namespace rasterizer::rendering;
+using namespace rasterizer::scene;
 using namespace rasterizer::math;
 
-rasterizer::rendering::Renderer::Renderer(rasterizer::scene::Scene& scene, int wWidth, int wHeight, int wScale)
+Renderer::Renderer(Scene& scene, int wWidth, int wHeight, int wScale)
     : _scene(scene), _wWidth(wWidth), _wHeight(wHeight), _wScale(wScale)
 {
     _initialized = init();
@@ -60,10 +61,6 @@ void Renderer::render()
 
     Rasterizer rasterizer(*_canvas, _wWidth, _wHeight, 1, 1, 1);
     rasterizer.setBakcgroundColor(_wWidth, _wHeight, Color(Color::WHITE));
-
-    //auto tranlatedVertices = rasterizer.translateVertices(Vector3(-1.5, 0, 7), vertices);
-    //rasterizer.renderObject(tranlatedVertices, triangles);
-
     rasterizer.renderScene(_scene);
 
     while (running)
@@ -77,6 +74,11 @@ void Renderer::render()
                 running = false;
             }
         }
+
+        // rasterizer.setBakcgroundColor(_wWidth, _wHeight, Color(Color::WHITE));
+        // rasterizer.renderScene(_scene);
+        // _scene.instances[0].transform.rotation += 0.01f;
+        // _scene.instances[1].transform.rotation -= 0.01f;
 
         SDL_UpdateTexture(_texture, nullptr, _canvas->getPixels(), _wWidth * sizeof(uint32_t));
         SDL_RenderClear(_renderer);

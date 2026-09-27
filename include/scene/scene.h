@@ -2,11 +2,9 @@
 
 #include <vector>
 #include "rendering/color.h"
-#include "rendering/instance.h"
-#include "light.h"
+#include "instance.h"
 #include <SDL3/SDL.h>
-
-using namespace rasterizer::rendering;
+#include "camera.h"
 
 namespace rasterizer::scene
 {
@@ -15,10 +13,10 @@ namespace rasterizer::scene
         Scene();
         ~Scene();
 
+        Camera camera;
+
         rasterizer::rendering::Color backgroundColor;
 
         std::vector<Instance> instances;
-
-        std::vector<Light> lights;
     };
 }

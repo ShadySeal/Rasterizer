@@ -1,9 +1,17 @@
 #include "scene/scene.h"
 #include "rendering/renderer.h"
+#include "math/transform.h"
+#include "scene/camera.h"
 
-rasterizer::scene::Scene::Scene()
+using namespace rasterizer::scene;
+using namespace rasterizer::rendering;
+using namespace rasterizer::math;
+
+Scene::Scene()
 {
-    rasterizer::rendering::Renderer renderer(*this, 800, 800, 1);
+    camera = Camera(Vector3(0, 0, 0), Matrix4x4::identity());
+
+    Renderer renderer(*this, 800, 800, 1);
 
     std::vector<Vector3> vertices = {
         { 1,  1,  1},
@@ -33,12 +41,15 @@ rasterizer::scene::Scene::Scene()
 
     Model cube("Cube", vertices, triangles);
 
-    Instance cube1(cube, Vector3(-1.5, 0, 7));
-    Instance cube2(cube, Vector3(1.25, 2, 7.5));
+    Instance cube1(cube, Vector3(-1.5, 0, 7), Transform(1.0f, 0.0f, Vector3(-1.5, 0, 7)));
+    Instance cube2(cube, Vector3(1.25, 2, 7.5), Transform(1.0f, 0.0f, Vector3(1.25, 2, 7.5)));
+
+    cube1.transform.rotation = 0.5f; // Rotate the first cube
+    cube2.transform.rotation = -0.5f; // Rotate the second cube in the opposite direction
 
     instances = {cube1, cube2};
 
     renderer.render();
 }
 
-rasterizer::scene::Scene::~Scene() {}
+Scene::~Scene() {}

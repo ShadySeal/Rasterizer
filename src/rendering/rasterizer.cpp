@@ -17,14 +17,6 @@ Vector2 Rasterizer::projectVertex(const Vector3& v) const
     return viewportToCanvas(v.x * _d / v.z, v.y * _d / v.z);
 }
 
-void Rasterizer::renderScene(Scene& scene) const
-{
-    for (auto& i : scene.instances)
-    {
-        renderInstance(i);
-    }
-}
-
 void Rasterizer::setBakcgroundColor(const int width, const int height, const Color color) const
 {
     for (int x = -width / 2; x <= width / 2; x++)
@@ -34,6 +26,26 @@ void Rasterizer::setBakcgroundColor(const int width, const int height, const Col
             _canvas.setPixel(x, y, color.packed);
         }
     }
+}
+
+std::vector<float> Rasterizer::interpolate(const float i0, const float d0, const float i1, const float d1) const
+{
+    if (i0 == i1)
+    {
+        return { d0 };
+    }
+
+    std::vector<float> values;
+    float a = (d1 - d0) / (i1 - i0);
+    float d = d0;
+
+    for (float i = i0; i <= i1; ++i)
+    {
+        values.push_back(d);
+        d = d + a;
+    }
+
+    return values;
 }
 
 void Rasterizer::drawLine(Vector2 p0, Vector2 p1, const Color color) const
@@ -78,26 +90,6 @@ void Rasterizer::drawLine(Vector2 p0, Vector2 p1, const Color color) const
                 color.packed);
         }
     }
-}
-
-std::vector<float> Rasterizer::interpolate(const float i0, const float d0, const float i1, const float d1) const
-{
-    if (i0 == i1)
-    {
-        return { d0 };
-    }
-
-    std::vector<float> values;
-    float a = (d1 - d0) / (i1 - i0);
-    float d = d0;
-
-    for (float i = i0; i <= i1; ++i)
-    {
-        values.push_back(d);
-        d = d + a;
-    }
-
-    return values;
 }
 
 void Rasterizer::drawWireframeTriangle(const Vector2 p0, const Vector2 p1, const Vector2 p2, const Color color) const
@@ -227,6 +219,31 @@ void Rasterizer::drawShadedTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const Co
     }
 }
 
+void Rasterizer::renderScene(Scene& scene) const
+{
+    Matrix4x4 mCamera = Matrix4x4::makeCameraMatrix(scene.camera.position, scene.camera.orientation);
+
+    for (auto& instance : scene.instances)
+    {
+        Matrix4x4 m = mCamera * Matrix4x4::fromTransform(instance.transform);
+        renderModel(instance.model, m);
+    }
+}
+
+void Rasterizer::renderModel(const Model& model, const Matrix4x4& transform) const
+{
+    std::vector<Vector2> projected;
+    for (auto v : model.vertices)
+    {
+        projected.push_back(projectVertex(transform * v));
+    }
+
+    for (auto t : model.triangles)
+    {
+        renderTriangle(t, projected);
+    }
+}
+
 void Rasterizer::renderObject(const std::vector<Vector3>& vertices, const std::vector<Triangle>& triangles) const
 {
     std::vector<Vector2> projected;
@@ -243,20 +260,20 @@ void Rasterizer::renderObject(const std::vector<Vector3>& vertices, const std::v
 
 void Rasterizer::renderInstance(const Instance instance) const
 {
-    std::vector<Vector2> projected;
+    // std::vector<Vector2> projected;
 
-    Model model = instance.model;
+    // Model model = instance.model;
 
-    for (auto v : model.vertices)
-    {
-        Vector3 vT = v + instance.position;
-        projected.push_back(projectVertex(vT));
-    }
+    // for (auto v : model.vertices)
+    // {
+    //     Vector3 vW = applyTransform(v, instance.transform);
+    //     projected.push_back(projectVertex(vW));
+    // }
 
-    for (auto t : model.triangles)
-    {
-        renderTriangle(t, projected);
-    }
+    // for (auto t : model.triangles)
+    // {
+    //     renderTriangle(t, projected);
+    // }
 }
 
 void Rasterizer::renderTriangle(const Triangle& triangle, const std::vector<Vector2>& projected) const
@@ -264,14 +281,23 @@ void Rasterizer::renderTriangle(const Triangle& triangle, const std::vector<Vect
     drawWireframeTriangle(projected[triangle.v[0]], projected[triangle.v[1]], projected[triangle.v[2]], triangle.color);
 }
 
-std::vector<Vector3> Rasterizer::translateVertices(const Vector3 t, const std::vector<Vector3>& vertices) const
+Vector3 Rasterizer::applyTransform(const Vector3 v, const Matrix4x4& transform) const
 {
-    std::vector<Vector3> translated;
+    return transform * v;
+}
 
-    for (const auto& v : vertices)
-    {
-        translated.push_back(v + t);
-    }
+Vector3 Rasterizer::scale(const Vector3 v, const float s) const
+{
+    return v * s;
+}
 
-    return translated;
+Vector3 Rasterizer::rotate(const Vector3 v, const float angle) const
+{
+    // Not implemented yet
+    return v;
+}
+
+Vector3 Rasterizer::translate(const Vector3 v, const Vector3 t) const
+{
+    return v + t;
 }

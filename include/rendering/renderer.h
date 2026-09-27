@@ -6,11 +6,7 @@
 #include <memory>
 #include <string>
 #include "canvas.h"
-
-namespace rasterizer::scene
-{
-    struct Scene;
-}
+#include "scene/scene.h"
 
 namespace rasterizer::rendering
 {

@@ -2,8 +2,6 @@
 
 #include "color.h"
 
-using namespace rasterizer::math;
-
 namespace rasterizer::rendering
 {
     struct Triangle
