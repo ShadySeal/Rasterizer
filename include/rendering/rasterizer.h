@@ -41,14 +41,16 @@ namespace rasterizer::rendering
         // Rendering
         void renderScene(rasterizer::scene::Scene& scene) const;
         void renderTriangle(const Triangle& triangle, const std::vector<rasterizer::math::Vector2>& projected) const;
-        void renderModel(const Model& model, const rasterizer::math::Matrix4x4& transform) const;
+        void renderModel(const Model& model) const;
 
-        rasterizer::scene::Scene clipScene(rasterizer::scene::Scene& scene, Plane& plane) const;
-        rasterizer::scene::Instance clipInstance(rasterizer::scene::Instance& instance, Plane& plane) const;
-        rasterizer::scene::Instance clipInstanceAgainstPlane(rasterizer::scene::Instance& instance, Plane& plane) const;
-        std::vector<Triangle> clipTrianglesAgainstPlane(std::vector<Triangle>& triangles, Plane& plane) const;
-        Triangle clipTriangle(Triangle& triangles, Plane& plane) const;
+        rasterizer::scene::Scene clipScene(rasterizer::scene::Scene& scene, std::vector<Plane>& planes) const;
+        rasterizer::scene::Instance clipInstance(rasterizer::scene::Instance& instance, std::vector<Plane>& planes) const;
+        std::optional<rasterizer::scene::Instance> clipInstanceAgainstPlane(rasterizer::scene::Instance& instance, Plane& planes) const;
+        std::vector<Triangle> clipTrianglesAgainstPlane(std::vector<Triangle>& triangles, Plane& plane, std::vector<rasterizer::math::Vector3>& vertices) const;
+        std::vector<Triangle> clipTriangle(const Triangle& triangle, const Plane& plane, std::vector<rasterizer::math::Vector3>& vertices) const;
 
+        rasterizer::scene::Instance toCameraSpace(const rasterizer::scene::Instance& instance, const rasterizer::math::Matrix4x4& mCamera) const;
         float signedDistance(const Plane& plane, const rasterizer::math::Vector3& vertex) const;
+        rasterizer::math::Vector3 intersect(const rasterizer::math::Vector3& A, const rasterizer::math::Vector3& B, const Plane& plane) const;
     };
 }

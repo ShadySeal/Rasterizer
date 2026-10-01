@@ -60,8 +60,10 @@ void Renderer::render()
     bool running = true;
 
     Rasterizer rasterizer(*_canvas, _wWidth, _wHeight, 1, 1, 1);
-    rasterizer.setBakcgroundColor(_wWidth, _wHeight, Color(Color::WHITE));
-    rasterizer.renderScene(_scene);
+    // rasterizer.setBakcgroundColor(_wWidth, _wHeight, Color(Color::WHITE));
+    // rasterizer.renderScene(_scene);
+
+    auto frustumPlanes = Plane::makeFrustumPlanes();
 
     while (running)
     {
@@ -74,11 +76,16 @@ void Renderer::render()
                 running = false;
             }
         }
+        
+        if (_scene.instances.size() > 0)
+            _scene.instances[0].transform.translation.z -= 0.01f;
+        if (_scene.instances.size() > 1)
+            _scene.instances[1].transform.rotation -= 0.01f;
 
+        // Scene clippedScene = rasterizer.clipScene(_scene, frustumPlanes);
         // rasterizer.setBakcgroundColor(_wWidth, _wHeight, Color(Color::WHITE));
-        // rasterizer.renderScene(_scene);
-        // _scene.instances[0].transform.rotation += 0.01f;
-        // _scene.instances[1].transform.rotation -= 0.01f;
+        rasterizer.renderScene(_scene);
+
 
         SDL_UpdateTexture(_texture, nullptr, _canvas->getPixels(), _wWidth * sizeof(uint32_t));
         SDL_RenderClear(_renderer);

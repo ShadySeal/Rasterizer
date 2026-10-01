@@ -221,21 +221,23 @@ void Rasterizer::drawShadedTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const Co
 
 void Rasterizer::renderScene(Scene& scene) const
 {
-    Matrix4x4 mCamera = Matrix4x4::makeCameraMatrix(scene.camera.position, scene.camera.orientation);
+    setBakcgroundColor(_cW, _cH, Color(Color::WHITE));
 
-    for (auto& instance : scene.instances)
+    auto frustumPlanes = Plane::makeFrustumPlanes();
+    Scene clippedScene = clipScene(scene, frustumPlanes);
+
+    for (auto& instance : clippedScene.instances)
     {
-        Matrix4x4 m = mCamera * Matrix4x4::fromTransform(instance.transform);
-        renderModel(instance.model, m);
+        renderModel(instance.model);
     }
 }
 
-void Rasterizer::renderModel(const Model& model, const Matrix4x4& transform) const
+void Rasterizer::renderModel(const Model& model) const
 {
     std::vector<Vector2> projected;
     for (auto v : model.vertices)
     {
-        projected.push_back(projectVertex(transform * v));
+        projected.push_back(projectVertex(v));
     }
 
     for (auto t : model.triangles)
@@ -249,11 +251,270 @@ void Rasterizer::renderTriangle(const Triangle& triangle, const std::vector<Vect
     drawWireframeTriangle(projected[triangle.v[0]], projected[triangle.v[1]], projected[triangle.v[2]], triangle.color);
 }
 
-
-float signedDistance(const Plane& plane, const Vector3& vertex)
+Scene Rasterizer::clipScene(Scene& scene, std::vector<Plane>& planes) const
 {
-    return vertex.x * plane.normal.x
-         + vertex.y * plane.normal.y
-         + vertex.z * plane.normal.z
-         + plane.d;
+    Matrix4x4 mCamera = Matrix4x4::makeCameraMatrix(scene.camera.position, scene.camera.orientation);
+
+    std::vector<Instance> clippedInstances;
+    for (auto& instance : scene.instances)
+    {
+        Instance cameraSpaceInstance = toCameraSpace(instance, mCamera);
+
+        Instance clippedInstance = clipInstance(cameraSpaceInstance, planes);
+        if (!clippedInstance.model.triangles.empty())
+        {
+            clippedInstances.push_back(clippedInstance);
+        }
+    }
+
+    Scene clippedScene = scene;
+    clippedScene.instances = clippedInstances;
+    return clippedScene;
+}
+
+Instance Rasterizer::clipInstance(Instance& instance, std::vector<Plane>& planes) const
+{
+    for (auto& plane : planes)
+    {
+        auto clipped = clipInstanceAgainstPlane(instance, plane);
+        if (!clipped.has_value())
+        {
+            instance.model.triangles.clear();
+            break;
+        }
+
+        instance = *clipped;
+        if (instance.model.triangles.empty())
+        {
+            break;
+        }
+    }
+
+    return instance;
+}
+
+std::optional<Instance> Rasterizer::clipInstanceAgainstPlane(Instance& instance, Plane& plane) const
+{
+    float d = signedDistance(plane, instance.model.boundingSphere.center);
+    float r = instance.model.boundingSphere.radius;
+    if (d > r)
+    {
+        return instance;
+    }
+    else if (d < -r)
+    {
+        return std::nullopt;
+    }   
+    else
+    {
+        Instance clippedInstance = instance;
+        clippedInstance.model.triangles = clipTrianglesAgainstPlane(clippedInstance.model.triangles, plane, clippedInstance.model.vertices);
+        return clippedInstance;
+    }
+}
+
+std::vector<Triangle> Rasterizer::clipTrianglesAgainstPlane(std::vector<Triangle>& triangles, Plane& plane, std::vector<Vector3>& vertices) const
+{
+    std::vector<Triangle> clippedTriangles;
+
+    for (auto& triangle : triangles)
+    {
+        auto clipped = clipTriangle(triangle, plane, vertices);
+
+        for (auto& t : clipped)
+        {
+            clippedTriangles.push_back(t);
+        }
+    }
+
+    return clippedTriangles;
+}
+
+std::vector<Triangle> Rasterizer::clipTriangle(const Triangle& triangle, const Plane& plane, std::vector<Vector3>& vertices) const
+{
+    Vector3 v0 = vertices[triangle.v[0]];
+    Vector3 v1 = vertices[triangle.v[1]];
+    Vector3 v2 = vertices[triangle.v[2]];
+
+    float d0 = signedDistance(plane, v0);
+    float d1 = signedDistance(plane, v1);
+    float d2 = signedDistance(plane, v2);
+
+    // All vertices are in front of the plane.
+    if (d0 > 0 && d1 > 0 && d2 > 0)
+    {
+        return { triangle };
+    }
+
+    // All vertices are behind the plane.
+    if (d0 < 0 && d1 < 0 && d2 < 0)
+    {
+        return {};
+    }
+
+    // Only v0 is in front.
+    if (d0 > 0 && d1 < 0 && d2 < 0)
+    {
+        Vector3 B = intersect(v0, v1, plane);
+        Vector3 C = intersect(v0, v2, plane);
+
+        vertices.push_back(B);
+        vertices.push_back(C);
+
+        Triangle clippedTriangle = Triangle(0, 0, 0, triangle.color);
+        clippedTriangle.v[0] = triangle.v[0];
+        clippedTriangle.v[1] = vertices.size() - 2;
+        clippedTriangle.v[2] = vertices.size() - 1;
+        clippedTriangle.color = triangle.color;
+
+        return { clippedTriangle };
+    }
+
+    // Only v1 is in front.
+    if (d1 > 0 && d0 < 0 && d2 < 0)
+    {
+        Vector3 A = intersect(v1, v0, plane);
+        Vector3 C = intersect(v1, v2, plane);
+
+        vertices.push_back(A);
+        vertices.push_back(C);
+
+        Triangle clippedTriangle = Triangle(0, 0, 0, triangle.color);
+        clippedTriangle.v[0] = triangle.v[1];
+        clippedTriangle.v[1] = vertices.size() - 2;
+        clippedTriangle.v[2] = vertices.size() - 1;
+        clippedTriangle.color = triangle.color;
+
+        return { clippedTriangle };
+    }
+
+    // Only v2 is in front.
+    if (d2 > 0 && d0 < 0 && d1 < 0)
+    {
+        Vector3 A = intersect(v2, v0, plane);
+        Vector3 B = intersect(v2, v1, plane);
+
+        vertices.push_back(A);
+        vertices.push_back(B);
+
+        Triangle clippedTriangle = Triangle(0, 0, 0, triangle.color);
+        clippedTriangle.v[0] = triangle.v[2];
+        clippedTriangle.v[1] = vertices.size() - 2;
+        clippedTriangle.v[2] = vertices.size() - 1;
+        clippedTriangle.color = triangle.color;
+
+        return { clippedTriangle };
+    }
+
+    // Only v0 is behind.
+    if (d0 < 0 && d1 > 0 && d2 > 0)
+    {
+        Vector3 A = intersect(v0, v1, plane);
+        Vector3 B = intersect(v0, v2, plane);
+
+        vertices.push_back(A);
+        vertices.push_back(B);
+
+        int a = vertices.size() - 2;
+        int b = vertices.size() - 1;
+
+        Triangle t1 = Triangle(0, 0, 0, triangle.color);
+        t1.v[0] = triangle.v[1];
+        t1.v[1] = triangle.v[2];
+        t1.v[2] = a;
+        t1.color = triangle.color;
+
+        Triangle t2 = Triangle(0, 0, 0, triangle.color);
+        t2.v[0] = a;
+        t2.v[1] = triangle.v[2];
+        t2.v[2] = b;
+        t2.color = triangle.color;
+
+        return { t1, t2 };
+    }
+
+    // Only v1 is behind.
+    if (d1 < 0 && d0 > 0 && d2 > 0)
+    {
+        Vector3 A = intersect(v1, v0, plane);
+        Vector3 B = intersect(v1, v2, plane);
+
+        vertices.push_back(A);
+        vertices.push_back(B);
+
+        int a = vertices.size() - 2;
+        int b = vertices.size() - 1;
+
+        Triangle t1 = Triangle(0, 0, 0, triangle.color);
+        t1.v[0] = triangle.v[0];
+        t1.v[1] = triangle.v[2];
+        t1.v[2] = a;
+        t1.color = triangle.color;
+
+        Triangle t2 = Triangle(0, 0, 0, triangle.color);
+        t2.v[0] = a;
+        t2.v[1] = triangle.v[2];
+        t2.v[2] = b;
+        t2.color = triangle.color;
+
+        return { t1, t2 };
+    }
+
+    // Only v2 is behind.
+    if (d2 < 0 && d0 > 0 && d1 > 0)
+    {
+        Vector3 A = intersect(v2, v0, plane);
+        Vector3 B = intersect(v2, v1, plane);
+
+        vertices.push_back(A);
+        vertices.push_back(B);
+
+        int a = vertices.size() - 2;
+        int b = vertices.size() - 1;
+
+        Triangle t1 = Triangle(0, 0, 0, triangle.color);
+        t1.v[0] = triangle.v[0];
+        t1.v[1] = triangle.v[1];
+        t1.v[2] = a;
+        t1.color = triangle.color;
+
+        Triangle t2 = Triangle(0, 0, 0, triangle.color);
+        t2.v[0] = a;
+        t2.v[1] = triangle.v[1];
+        t2.v[2] = b;
+        t2.color = triangle.color;
+
+        return { t1, t2 };
+    }
+
+    return {};
+}
+
+Instance Rasterizer::toCameraSpace(const Instance& instance, const Matrix4x4& mCamera) const
+{
+    Matrix4x4 m = mCamera * Matrix4x4::fromTransform(instance.transform);
+
+    Instance result = instance;
+    for (auto& v : result.model.vertices)
+    {
+        v = m * v;
+    }
+    result.model.boundingSphere.center = m * instance.model.boundingSphere.center;
+    result.model.boundingSphere.radius = instance.model.boundingSphere.radius * instance.transform.scale;
+    result.transform = Transform{};
+
+    return result;
+}
+
+float Rasterizer::signedDistance(const Plane& plane, const rasterizer::math::Vector3& vertex) const
+{
+    return Vector3::dot(plane.normal, vertex) + plane.d;
+}
+
+Vector3 Rasterizer::intersect(const Vector3& A, const Vector3& B, const Plane& plane) const
+{
+    float dA = signedDistance(plane, A);
+    float dB = signedDistance(plane, B);
+    float t = dA / (dA - dB);
+    return A + (B - A) * t;
 }
