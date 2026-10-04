@@ -15,7 +15,7 @@ namespace rasterizer::rendering
         Canvas(int width, int height);
         ~Canvas();
 
-        void setPixel(const int x, const int y, const uint32_t color) const;
+        void putPixel(const int x, const int y, const uint32_t color) const;
         uint32_t* getPixels() const;
     };
 }

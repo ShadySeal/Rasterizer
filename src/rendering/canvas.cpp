@@ -12,7 +12,7 @@ Canvas::~Canvas()
     delete[] _pixels;
 }
 
-void Canvas::setPixel(const int x, const int y, const uint32_t color) const
+void Canvas::putPixel(const int x, const int y, const uint32_t color) const
 {
     const int sx = _width / 2 + x;
     const int sy = _height / 2 - y;

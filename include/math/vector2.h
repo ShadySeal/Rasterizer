@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include "vector3.h"
 
 namespace rasterizer::math
 {
@@ -46,6 +47,11 @@ namespace rasterizer::math
         static float dot(const Vector2& a, const Vector2& b)
         {
             return a.x * b.x + a.y * b.y;
+        }
+
+        Vector3 toVector3(float z = 0.0f)
+        {
+            return Vector3(x, y, z);
         }
     };
 }

@@ -5,7 +5,10 @@ using namespace rasterizer::math;
 using namespace rasterizer::scene;
 
 Rasterizer::Rasterizer(Canvas& canvas, int cW, int cH, float vW, float vH, float d)
-: _canvas(canvas), _cW(cW), _cH(cH), _vW(vW), _vH(vH), _d(d) {}
+: _canvas(canvas), _cW(cW), _cH(cH), _vW(vW), _vH(vH), _d(d)
+{
+    _depthBuffer.resize(_cW * _cH);
+}
 
 Vector2 Rasterizer::viewportToCanvas(float x, float y) const
 {
@@ -23,7 +26,7 @@ void Rasterizer::setBakcgroundColor(const int width, const int height, const Col
     {
         for (int y = -height / 2; y <= height / 2; y++)
         {
-            _canvas.setPixel(x, y, color.packed);
+            _canvas.putPixel(x, y, color.packed);
         }
     }
 }
@@ -65,7 +68,7 @@ void Rasterizer::drawLine(Vector2 p0, Vector2 p1, const Color color) const
 
         for (float x = p0.x; x <= p1.x; ++x)
         {
-            _canvas.setPixel(
+            _canvas.putPixel(
                 static_cast<int>(std::round(x)),
                 static_cast<int>(std::round(ys[x - p0.x])),
                 color.packed);
@@ -84,7 +87,7 @@ void Rasterizer::drawLine(Vector2 p0, Vector2 p1, const Color color) const
 
         for (float y = p0.y; y <= p1.y; ++y)
         {
-            _canvas.setPixel(
+            _canvas.putPixel(
                 static_cast<int>(std::round(xs[y - p0.y])),
                 static_cast<int>(std::round(y)),
                 color.packed);
@@ -99,50 +102,94 @@ void Rasterizer::drawWireframeTriangle(const Vector2 p0, const Vector2 p1, const
     drawLine(p2, p0, color);
 }
 
-void Rasterizer::drawFilledTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const Color color) const
+void Rasterizer::drawFilledTriangle(Vector3 p0, Vector3 p1, Vector3 p2, const Color color) const
 {
+    p0.y = std::round(p0.y);
+    p1.y = std::round(p1.y);
+    p2.y = std::round(p2.y);
+
     // Sort the points so that y0 <= y1 <= y2
     if (p1.y < p0.y) { std::swap(p1, p0); }
     if (p2.y < p0.y) { std::swap(p2, p0); }
     if (p2.y < p1.y) { std::swap(p2, p1); }
+
+    float invZ0 = 1.0f / p0.z;
+    float invZ1 = 1.0f / p1.z;
+    float invZ2 = 1.0f / p2.z;
 
     // Compute the x coordinates of the triangle edges
     auto x01 = interpolate(p0.y, p0.x, p1.y, p1.x);
     auto x12 = interpolate(p1.y, p1.x, p2.y, p2.x);
     auto x02 = interpolate(p0.y, p0.x, p2.y, p2.x);
 
+    // Compute the z values along the same edges, same way as x
+    auto invZ01 = interpolate(p0.y, invZ0, p1.y, invZ1);
+    auto invZ12 = interpolate(p1.y, invZ1, p2.y, invZ2);
+    auto invZ02 = interpolate(p0.y, invZ0, p2.y, invZ2);
+
     // Concatenate the short sides
     x01.pop_back();
     std::vector<float> x012 = x01;
     x012.insert(x012.end(), x12.begin(), x12.end());
 
+    invZ01.pop_back();
+    std::vector<float> invZ012 = invZ01;
+    invZ012.insert(invZ012.end(), invZ12.begin(), invZ12.end());
+
+
     // Determine which is left and which is right
-    std::vector<float> xLeft;
-    std::vector<float> xRight;
+    std::vector<float> xLeft, xRight, invZLeft, invZRight;
     int m = std::floor(x012.size() / 2);
     if (x02[m] < x012[m])
     {
         xLeft = x02;
+        invZLeft = invZ02;
+
         xRight = x012;
+        invZRight = invZ012;
     }
     else
     {
         xLeft = x012;
+        invZLeft = invZ012;
+
         xRight = x02;
+        invZRight = invZ02;
     }
 
     // Draw the horizontal segments
     for (float y = p0.y; y <= p2.y; ++y)
     {
-        for (float x = xLeft[y - p0.y]; x <= xRight[y - p0.y]; ++x)
+        int row = static_cast<int>(y - p0.y);
+        float xL = xLeft[row];
+        float xR = xRight[row];
+
+        auto zSegment = interpolate(xL, invZLeft[row], xR, invZRight[row]);
+
+        for (float x = xL; x <= xR; ++x)
         {
-            _canvas.setPixel(x, y, color.packed);
+            int col = static_cast<int>(x - xL);
+            float z = zSegment[col];
+
+            int ix = static_cast<int>(std::round(x));
+            int iy = static_cast<int>(std::round(y));
+            int idx = depthIndex(ix, iy);
+
+            if (idx >= 0 && z > _depthBuffer[idx])
+            {
+                _canvas.putPixel(ix, iy, color.packed);
+                _depthBuffer[idx] = z;
+            }
         }
     }
 }
 
 void Rasterizer::drawShadedTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const Color color) const
 {
+    p0.y = std::round(p0.y);
+    p1.y = std::round(p1.y);
+    p2.y = std::round(p2.y);
+
     // Sort the points so that y0 <= y1 <= y2
     if (p1.y < p0.y) { std::swap(p1, p0); }
     if (p2.y < p0.y) { std::swap(p2, p0); }
@@ -210,7 +257,7 @@ void Rasterizer::drawShadedTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const Co
 
             Color shadedColor = color * h;
 
-            _canvas.setPixel(
+            _canvas.putPixel(
                 static_cast<int>(std::round(x)),
                 static_cast<int>(std::round(y)),
                 shadedColor.packed
@@ -222,6 +269,7 @@ void Rasterizer::drawShadedTriangle(Vector2 p0, Vector2 p1, Vector2 p2, const Co
 void Rasterizer::renderScene(Scene& scene) const
 {
     setBakcgroundColor(_cW, _cH, Color(Color::WHITE));
+    clearDepthBuffer();
 
     auto frustumPlanes = Plane::makeFrustumPlanes();
     Scene clippedScene = clipScene(scene, frustumPlanes);
@@ -234,21 +282,41 @@ void Rasterizer::renderScene(Scene& scene) const
 
 void Rasterizer::renderModel(const Model& model) const
 {
-    std::vector<Vector2> projected;
+    std::vector<Vector3> projected;
     for (auto v : model.vertices)
     {
-        projected.push_back(projectVertex(v));
+        projected.push_back(projectVertex(v).toVector3(v.z));
     }
 
     for (auto t : model.triangles)
     {
+        Vector3 p0 = model.vertices[t.v[0]];
+        Vector3 p1 = model.vertices[t.v[1]];
+        Vector3 p2 = model.vertices[t.v[2]];
+
+        // Triangle edges
+        Vector3 edge1 = p1 - p0;
+        Vector3 edge2 = p2 - p0;
+
+        // Triangle normal
+        Vector3 normal = Vector3::cross(edge1, edge2);
+
+        // Camera is at (0, 0, 0) in camera space.
+        Vector3 view(-p0.x, -p0.y, -p0.z);
+
+        // Backface culling
+        if (Vector3::dot(normal, view) <= 0)
+        {
+            continue;
+        }
+
         renderTriangle(t, projected);
     }
 }
 
-void Rasterizer::renderTriangle(const Triangle& triangle, const std::vector<Vector2>& projected) const
+void Rasterizer::renderTriangle(const Triangle& triangle, const std::vector<Vector3>& projected) const
 {
-    drawWireframeTriangle(projected[triangle.v[0]], projected[triangle.v[1]], projected[triangle.v[2]], triangle.color);
+    drawFilledTriangle(projected[triangle.v[0]], projected[triangle.v[1]], projected[triangle.v[2]], triangle.color);
 }
 
 Scene Rasterizer::clipScene(Scene& scene, std::vector<Plane>& planes) const
@@ -517,4 +585,20 @@ Vector3 Rasterizer::intersect(const Vector3& A, const Vector3& B, const Plane& p
     float dB = signedDistance(plane, B);
     float t = dA / (dA - dB);
     return A + (B - A) * t;
+}
+
+void Rasterizer::clearDepthBuffer() const
+{
+    std::fill(_depthBuffer.begin(), _depthBuffer.end(), 0.0f);;
+}
+
+int Rasterizer::depthIndex(int x, int y) const
+{
+    int ix = x + _cW / 2;
+    int iy = y + _cH / 2;
+
+    if (ix < 0 || ix >= _cW || iy < 0 || iy >= _cH)
+        return -1; // out of bounds
+
+    return iy * _cW + ix;
 }

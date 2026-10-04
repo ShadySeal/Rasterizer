@@ -78,14 +78,11 @@ void Renderer::render()
         }
         
         if (_scene.instances.size() > 0)
-            _scene.instances[0].transform.translation.z -= 0.01f;
+            _scene.instances[0].transform.rotation += 0.05f;
         if (_scene.instances.size() > 1)
             _scene.instances[1].transform.rotation -= 0.01f;
 
-        // Scene clippedScene = rasterizer.clipScene(_scene, frustumPlanes);
-        // rasterizer.setBakcgroundColor(_wWidth, _wHeight, Color(Color::WHITE));
         rasterizer.renderScene(_scene);
-
 
         SDL_UpdateTexture(_texture, nullptr, _canvas->getPixels(), _wWidth * sizeof(uint32_t));
         SDL_RenderClear(_renderer);
