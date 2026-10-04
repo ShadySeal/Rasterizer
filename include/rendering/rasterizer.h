@@ -38,7 +38,7 @@ namespace rasterizer::rendering
 
         // Rendering
         void renderTriangle(const Triangle& triangle, const std::vector<rasterizer::math::Vector3>& projected) const;
-        void renderModel(const Model& model) const;
+        void renderModel(const Model& model, rasterizer::scene::Scene& scene) const;
 
         rasterizer::scene::Scene clipScene(rasterizer::scene::Scene& scene, std::vector<Plane>& planes) const;
         rasterizer::scene::Instance clipInstance(rasterizer::scene::Instance& instance, std::vector<Plane>& planes) const;
@@ -52,6 +52,8 @@ namespace rasterizer::rendering
 
         void clearDepthBuffer() const;
         int depthIndex(int x, int y) const;
+
+        float computeLighting(const rasterizer::math::Vector3 p, const rasterizer::math::Vector3 n, rasterizer::scene::Scene& scene) const;
 
         public:
         Rasterizer(Canvas& canvas, int cW, int cH, float vW, float vH, float d);

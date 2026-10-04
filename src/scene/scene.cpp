@@ -41,15 +41,20 @@ Scene::Scene()
 
     Model cube("Cube", vertices, triangles);
 
-    Model sphere = Model::makeSphere("Sphere", 1, 10, 10, Color(Color::GREEN));
+    Model sphere = Model::makeSphere("Sphere", 1, 15, 15, Color(Color::GREEN));
 
     Instance cube1(cube, Vector3(-1.5, 0, 7), Transform(1.0f, 0.0f, Vector3(-1.5, 1.5, 7)));
     Instance sphere1(sphere, Vector3(1.25, 2, 7.5), Transform(1.0f, 0.0f, Vector3(1.25, -1, 7.5)));
 
     cube1.transform.rotation = 0.5f; // Rotate the first cube
-    sphere1.transform.rotation = -0.5f; // Rotate the second cube in the opposite direction
 
     instances = {cube1, sphere1};
+
+    Light ambient(Light::AMBIENT, 0.2);
+    Light point(Light::POINT, 0.6, Vector3(2, 1, 0));
+    Light directional(Light::DIRECTIONAL, 0.2, Vector3(0, 0, 0), Vector3(1, 4, 4));
+
+    lights = {ambient, point, directional};
 
     renderer.render();
 }

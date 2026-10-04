@@ -5,6 +5,7 @@
 #include "instance.h"
 #include <SDL3/SDL.h>
 #include "camera.h"
+#include "light.h"
 
 namespace rasterizer::scene
 {
@@ -18,5 +19,7 @@ namespace rasterizer::scene
         rasterizer::rendering::Color backgroundColor;
 
         std::vector<Instance> instances;
+
+        std::vector<Light> lights;
     };
 }

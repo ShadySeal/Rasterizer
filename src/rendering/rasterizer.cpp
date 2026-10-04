@@ -276,11 +276,11 @@ void Rasterizer::renderScene(Scene& scene) const
 
     for (auto& instance : clippedScene.instances)
     {
-        renderModel(instance.model);
+        renderModel(instance.model, scene);
     }
 }
 
-void Rasterizer::renderModel(const Model& model) const
+void Rasterizer::renderModel(const Model& model, Scene& scene) const
 {
     std::vector<Vector3> projected;
     for (auto v : model.vertices)
@@ -309,6 +309,11 @@ void Rasterizer::renderModel(const Model& model) const
         {
             continue;
         }
+
+        // Lighting goes here, using the normal you already have
+        Vector3 centroid = (p0 + p1 + p2) * (1.0f / 3.0f);
+        float intensity = computeLighting(centroid, normal, scene);
+        t.color = t.color * intensity;
 
         renderTriangle(t, projected);
     }
@@ -601,4 +606,39 @@ int Rasterizer::depthIndex(int x, int y) const
         return -1; // out of bounds
 
     return iy * _cW + ix;
+}
+
+float Rasterizer::computeLighting(const Vector3 p, const Vector3 n, Scene& scene) const
+{
+    float i = 0.0f;
+
+    for (auto& light : scene.lights)
+    {
+        if (light.type == Light::AMBIENT)
+        {
+            i += light.getIntensity();
+        }
+        else
+        {
+            Vector3 l;
+
+            if (light.type == Light::POINT)
+            {
+                l = light.position - p;
+            }
+            else
+            {
+                l = light.direction;
+            }
+
+            float nDotL = Vector3::dot(n, l);
+
+            if (nDotL > 0)
+            {
+                i += light.getIntensity() * nDotL/(n.magnitude() * l.magnitude());
+            }
+        }
+    }
+
+    return i;
 }
